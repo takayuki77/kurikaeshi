@@ -1,0 +1,15 @@
+{
+  "name": "くりかえし帳",
+  "short_name": "くりかえし帳",
+  "description": "くり返しの家事・メンテナンスのリマインダーと記録",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F1F2F0",
+  "theme_color": "#2C5FA8",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
