@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><title>動作試験</title></head>
+<body>
+<pre id="log">start
+</pre>
+<script src="logic.js"></script>
+<script>
+const log = m => { document.getElementById('log').textContent += m + '\n'; };
+log('logic.js: ' + (typeof todayStr === 'function' ? 'OK ' + todayStr() : 'NG'));
+
+function tryOpen(name, stores, label){
+  return new Promise(res=>{
+    let settled = false;
+    const done = m => { if(!settled){ settled = true; log(label + ': ' + m); res(); } };
+    setTimeout(()=>done('TIMEOUT'), 4000);
+    try{
+      const r = indexedDB.open(name, 1);
+      r.onupgradeneeded = ()=>{ stores.forEach(s=>{ if(!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, {keyPath:'id'}); }); };
+      r.onblocked = ()=>done('BLOCKED');
+      r.onerror = ()=>done('ERROR ' + r.error);
+      r.onsuccess = ()=>{
+        const d = r.result;
+        const q = d.transaction(stores[0]).objectStore(stores[0]).getAll();
+        q.onsuccess = ()=>{ d.close(); done('OK getAll=' + q.result.length); };
+        q.onerror = ()=>{ d.close(); done('GETALL-ERROR'); };
+      };
+    }catch(e){ done('THROW ' + e.message); }
+  });
+}
+(async ()=>{
+  await tryOpen('testdb-one', ['a'], 'A:1store');
+  await tryOpen('testdb-two', ['a','b'], 'B:2stores');
+  await tryOpen('kurikaeshi', ['tasks','records'], 'C:appdb');
+  log('done');
+})();
+</script>
+</body>
+</html>
