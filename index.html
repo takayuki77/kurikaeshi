@@ -279,7 +279,7 @@
         <select id="f_unit">
           <option value="day">日</option>
           <option value="week" selected>週</option>
-          <option value="month">か月</option>
+          <option value="month">月</option>
           <option value="none">決めない（随時）</option>
         </select>
       </div>
@@ -297,15 +297,11 @@
       <div class="sec">スケジュール</div>
       <div class="card">
         <div class="frow">
-          <span class="fk">開始日</span>
-          <input id="f_start" type="date">
-        </div>
-        <div class="frow">
           <span class="fk">次の実施予定日</span>
-          <span class="fv strong" id="nextPreview">—</span>
+          <input id="f_next" type="date">
         </div>
       </div>
-      <div class="hint" id="schedHint">開始日から数えて、次にやる日が自動で決まります。</div>
+      <div class="hint" id="schedHint"></div>
     </div>
 
     <div class="sec">メモ</div>
@@ -697,7 +693,7 @@ function fillGroupSelect(chosen){
   });
   el.value = groups().includes(chosen) ? chosen : '';
 }
-/* 開始日がそのまま次の実施予定日。完了した日から間隔ぶん先が、その次になる */
+/* 次にやる日を直接入れる。完了すると、その完了日から間隔ぶん先が次になる */
 function syncForm(){
   const unit = $('f_unit').value;
   const isInt = unit !== 'none';
@@ -706,18 +702,17 @@ function syncForm(){
   if(!isInt) return;
   const every = clampEvery($('f_every').value);
   $('everyMinus').disabled = every <= 1;
-  const start = $('f_start').value || todayStr();
+  const next = $('f_next').value || todayStr();
   const t = todayStr();
-  $('nextPreview').textContent = fmtDate(start);
-  const when = start === t ? '今日やること' : (diffDays(t, start) < 0 ? '今日やること（超過）' : '今後');
+  const when = next === t ? '今日やること' : (diffDays(t, next) < 0 ? '今日やること（超過）' : '今後');
   $('schedHint').textContent =
-    `${fmtShort(start)} にやる予定として一覧の「${when}」に出ます。`
-    + `完了すると、その日から ${every}${unitLabel(unit)} 後が次の予定になります。`;
+    `${fmtShort(next)} にやる予定として一覧の「${when}」に出ます。`
+    + `完了すると、その完了日から ${every}${unitLabel(unit)} 後が次の予定になります。`;
 }
 function clampEvery(v){ return Math.max(1, Math.min(365, Number(v) || 1)); }
 $('f_unit').onchange = syncForm;
 $('f_every').oninput = syncForm;
-$('f_start').onchange = syncForm;
+$('f_next').onchange = syncForm;
 $('everyMinus').onclick = ()=>{ $('f_every').value = clampEvery(Number($('f_every').value) - 1); syncForm(); };
 $('everyPlus').onclick  = ()=>{ $('f_every').value = clampEvery(Number($('f_every').value) + 1); syncForm(); };
 
@@ -729,7 +724,7 @@ function openForm(id){
   fillGroupSelect(task ? task.group : '');
   $('f_unit').value  = task ? (task.type === 'interval' ? task.unit : 'none') : 'week';
   $('f_every').value = task && task.every ? task.every : 1;
-  $('f_start').value = task && task.nextDue ? task.nextDue : todayStr();
+  $('f_next').value  = task && task.nextDue ? task.nextDue : todayStr();
   $('f_note').value  = task ? (task.note || '') : '';
   $('formDel').classList.toggle('hidden', !task);
   syncForm();
@@ -750,9 +745,9 @@ async function saveForm(){
     task.type = 'anytime';
     delete task.every; delete task.unit; delete task.nextDue;
   }else{
-    // 開始日 ＝ 次の実施予定日。完了して初めて、そこから間隔ぶん先へ進む
+    // 入れた日がそのまま次の実施予定日。完了して初めて、そこから間隔ぶん先へ進む
     const every = clampEvery($('f_every').value);
-    Object.assign(task, {type:'interval', every, unit, nextDue: $('f_start').value || todayStr()});
+    Object.assign(task, {type:'interval', every, unit, nextDue: $('f_next').value || todayStr()});
   }
   await dbPut('tasks', task);
   if(!editingTask) tasks.push(task);
