@@ -47,12 +47,24 @@
   .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px calc(var(--safe-b) + 90px)}
 
   .rowlabel{font-size:11px;color:var(--muted);letter-spacing:.08em;font-weight:700;margin:14px 0 6px;display:flex;justify-content:space-between}
-  .rowlabel:first-child{margin-top:2px}
+
+  /* グループの絞り込み */
+  .chiprow{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+  .chiprow::-webkit-scrollbar{display:none}
+  .chip{
+    flex:none;display:flex;align-items:center;gap:6px;
+    font-size:12.5px;padding:5px 12px;border-radius:999px;white-space:nowrap;
+    border:1px solid var(--line);color:var(--muted);background:var(--surface);
+  }
+  .chip[aria-pressed="true"]{color:#fff;font-weight:700;border-color:transparent}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--muted)}
+  .chip[aria-pressed="true"] .dot{background:rgba(255,255,255,.85)}
 
   /* タスク一覧の行 */
   .trow{
     display:flex;align-items:center;gap:11px;background:var(--surface);
-    border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;
+    border:1px solid var(--line);border-left-width:4px;
+    border-radius:11px;padding:10px 12px;margin-bottom:8px;
   }
   .trow.overdue{border-color:var(--signal)}
   .tchk{
@@ -63,7 +75,8 @@
   .tchk:active{background:var(--accent-q);border-color:var(--accent);color:var(--accent)}
   .tmain{flex:1;text-align:left;min-width:0}
   .tname{font-size:15px;font-weight:700;line-height:1.4;word-break:break-word}
-  .tsub{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .tsub{font-size:11.5px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .tgrp{font-weight:700}
   .tstat{flex:none;font-size:13px;font-weight:700;text-align:right;white-space:nowrap}
   .tstat.over{color:var(--signal)}
   .tstat.due{color:var(--accent)}
@@ -78,27 +91,55 @@
     box-shadow:0 6px 20px -4px rgba(44,95,168,.55);z-index:5;
   }
 
-  /* フォーム */
-  .field{margin-top:12px}
-  .field label{display:block;font-size:11.5px;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:4px}
-  .field input,.field textarea,.field select{
-    width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
-    padding:10px 11px;font-size:15px;outline:none;-webkit-appearance:none;appearance:none;
+  /* フォーム（設定アプリ風のまとまり） */
+  .sec{font-size:11.5px;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:18px 0 7px}
+  .sec:first-child{margin-top:2px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .frow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border-top:1px solid var(--line);min-height:48px}
+  .frow:first-child{border-top:0}
+  .frow .fk{flex:none}
+  .frow .fv{color:var(--muted);text-align:right}
+  .frow .fv.strong{color:var(--ink);font-weight:700}
+  .card input[type=text],.card textarea{
+    width:100%;background:none;border:0;outline:none;padding:12px 13px;font-size:15px;
   }
-  .field select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat}
-  .field textarea{min-height:72px;resize:vertical;line-height:1.7}
-  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
-  .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .card textarea{min-height:76px;resize:vertical;line-height:1.7;display:block}
+  .card input::placeholder,.card textarea::placeholder{color:var(--muted);opacity:.75}
+  .card select{
+    background:none;border:0;outline:none;color:var(--ink);font-weight:700;
+    text-align:right;text-align-last:right;-webkit-appearance:none;appearance:none;
+    padding-right:14px;max-width:62%;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 5px) calc(50% - 2px),calc(100% - 1px) calc(50% - 2px);
+    background-size:5px 5px;background-repeat:no-repeat;
+  }
+  .card input[type=date]{
+    background:var(--paper);border:0;border-radius:8px;padding:5px 9px;outline:none;
+    font-size:14px;font-weight:700;-webkit-appearance:none;appearance:none;
+  }
+  /* 間隔の − ＋ */
+  .step{display:flex;align-items:center;gap:2px}
+  .step .num{
+    width:56px;text-align:right;background:none;border:0;outline:none;
+    font-size:15px;font-weight:700;padding-right:8px;-moz-appearance:textfield;
+  }
+  .step .num::-webkit-outer-spin-button,.step .num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .step .sb{
+    width:36px;height:32px;background:var(--paper);color:var(--accent);
+    font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  }
+  .step .sb:first-of-type{border-radius:8px 0 0 8px}
+  .step .sb:last-of-type{border-radius:0 8px 8px 0;border-left:1px solid var(--line)}
+  .step .sb:disabled{color:var(--muted);opacity:.45}
+  .hint{font-size:11.5px;color:var(--muted);margin:5px 2px 0;line-height:1.6}
 
-  .btn{display:block;width:100%;text-align:center;font-weight:700;font-size:15px;padding:13px;border-radius:10px;background:var(--accent);color:#fff;margin-top:14px}
+  .btn{display:block;width:100%;text-align:center;font-weight:700;font-size:15px;padding:13px;border-radius:10px;background:var(--accent);color:#fff;margin-top:16px}
   .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
   .btn.danger{background:transparent;color:var(--signal);border:1px solid var(--signal)}
 
   /* 詳細 */
   .title{font-size:20px;font-weight:700;margin:4px 0 2px;word-break:break-word}
-  .subline{font-size:12.5px;color:var(--muted)}
+  .subline{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .notebox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;white-space:pre-wrap;font-size:13.5px;line-height:1.8;color:var(--muted)}
 
   .duecard{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:12px 13px;margin-top:12px}
@@ -107,7 +148,7 @@
   .duecard .dval{font-size:16px;font-weight:700}
   .duecard .dval.over{color:var(--signal)}
   .duecard .dval.due{color:var(--accent)}
-  .pprow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .pprow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
   .pp{font-size:12.5px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--paper)}
 
   .statrow{display:flex;gap:8px;margin-top:12px}
@@ -132,6 +173,13 @@
   .rphotos img{width:56px;height:56px;object-fit:cover;border-radius:8px;background:var(--line)}
 
   /* 記録の編集：写真 */
+  .field{margin-top:12px}
+  .field label{display:block;font-size:11.5px;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .field input,.field textarea{
+    width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+    padding:10px 11px;font-size:15px;outline:none;-webkit-appearance:none;appearance:none;
+  }
+  .field textarea{min-height:72px;resize:vertical;line-height:1.7}
   .pgrid{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px}
   .pcell{position:relative;width:84px}
   .pcell img{width:84px;height:84px;object-fit:cover;border-radius:10px;background:var(--line);display:block}
@@ -146,7 +194,6 @@
   }
 
   /* 設定 */
-  .sec{font-size:11.5px;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:18px 0 7px}
   .lrow{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 13px;margin-bottom:8px;width:100%;text-align:left}
   .lrow .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
   .lrow .arrow{color:var(--muted)}
@@ -179,6 +226,7 @@
     <button class="link" id="toSettings">設定</button>
   </div>
   <div class="scroll">
+    <div class="chiprow hidden" id="groupChips"></div>
     <div id="homeSections"></div>
     <div class="empty hidden" id="homeEmpty">
       まだタスクがありません。<br>
@@ -192,55 +240,64 @@
 <section id="view-form" class="view">
   <div class="bar">
     <button class="link" id="formCancel">キャンセル</button>
-    <h1 id="formTitle" style="font-size:16px">タスクを追加</h1>
+    <h1 id="formTitle" style="font-size:16px">新規タスク</h1>
     <button class="link" id="formSave">保存</button>
   </div>
   <div class="scroll">
-    <div class="field">
-      <label for="f_name">名前</label>
-      <input id="f_name" type="text" placeholder="換気扇フィルター掃除">
+    <div class="sec">名前</div>
+    <div class="card">
+      <input id="f_name" type="text" placeholder="例：エアコンフィルターの掃除">
     </div>
-    <div class="field">
-      <label for="f_type">くり返し方</label>
-      <select id="f_type">
-        <option value="interval">周期でくり返す（3日ごと・2週間ごと 等）</option>
-        <option value="anytime">いつでも（周期を決めない随時タスク）</option>
-      </select>
+
+    <div class="sec">グループ</div>
+    <div class="card">
+      <div class="frow">
+        <span class="fk">グループ</span>
+        <select id="f_group"></select>
+      </div>
     </div>
-    <div id="intervalFields">
-      <div class="two">
-        <div class="field">
-          <label for="f_every">周期の数</label>
-          <input id="f_every" type="number" inputmode="numeric" min="1" max="365" value="1">
+
+    <div class="sec">頻度</div>
+    <div class="card">
+      <div class="frow">
+        <span class="fk">繰り返しの単位</span>
+        <select id="f_unit">
+          <option value="day">日</option>
+          <option value="week">週</option>
+          <option value="month">か月</option>
+          <option value="none">決めない（随時）</option>
+        </select>
+      </div>
+      <div class="frow" id="everyRow">
+        <span class="fk">繰り返しの間隔</span>
+        <span class="step">
+          <input class="num" id="f_every" type="number" inputmode="numeric" min="1" max="365" value="5">
+          <button class="sb" id="everyMinus" aria-label="間隔を減らす">−</button>
+          <button class="sb" id="everyPlus" aria-label="間隔を増やす">＋</button>
+        </span>
+      </div>
+    </div>
+
+    <div id="schedSection">
+      <div class="sec">スケジュール</div>
+      <div class="card">
+        <div class="frow">
+          <span class="fk">開始日</span>
+          <input id="f_start" type="date">
         </div>
-        <div class="field">
-          <label for="f_unit">単位</label>
-          <select id="f_unit">
-            <option value="day">日ごと</option>
-            <option value="week">週間ごと</option>
-            <option value="month">か月ごと</option>
-          </select>
+        <div class="frow">
+          <span class="fk">次の実施予定日</span>
+          <span class="fv strong" id="nextPreview">—</span>
         </div>
       </div>
-      <div class="two">
-        <div class="field">
-          <label for="f_times">1日の回数</label>
-          <select id="f_times">
-            <option value="1">1回</option><option value="2">2回</option><option value="3">3回</option>
-            <option value="4">4回</option><option value="5">5回</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="f_next">次回の予定日</label>
-          <input id="f_next" type="date">
-        </div>
-      </div>
-      <div class="hint">「サプリを朝晩飲む」なら 1日ごと・2回 にします</div>
+      <div class="hint" id="schedHint">開始日から数えて、次にやる日が自動で決まります。</div>
     </div>
-    <div class="field">
-      <label for="f_note">メモ（やり方・品番など）</label>
-      <textarea id="f_note" placeholder="フィルターの品番：〇〇-1234"></textarea>
+
+    <div class="sec">メモ</div>
+    <div class="card">
+      <textarea id="f_note" placeholder="やり方・品番など（例：フィルターの品番 ABC-123）"></textarea>
     </div>
+
     <button class="btn" id="formSave2">保存</button>
     <button class="btn danger hidden" id="formDel">このタスクを削除</button>
   </div>
@@ -259,7 +316,7 @@
 
     <div class="duecard" id="dDueCard">
       <div class="dtop">
-        <span class="dlab">次回の予定</span>
+        <span class="dlab">次の実施予定日</span>
         <span class="dval" id="dDueVal"></span>
       </div>
       <div class="pprow">
@@ -267,6 +324,7 @@
         <button class="pp" data-pp="1">＋1日</button>
         <button class="pp" data-pp="3">＋3日</button>
         <button class="pp" data-pp="7">＋1週間</button>
+        <button class="pp" id="ppCycle">次の周期へ</button>
         <button class="pp" id="ppDate">日付を選ぶ</button>
       </div>
     </div>
@@ -320,6 +378,9 @@
     <span style="width:52px"></span>
   </div>
   <div class="scroll">
+    <div class="sec">グループ</div>
+    <button class="lrow" id="groupEdit"><span><span>グループを編集</span><div class="sub" id="groupSub"></div></span><span class="arrow">›</span></button>
+
     <div class="sec">通知</div>
     <button class="lrow" id="notifRow">
       <span><span>プッシュ通知</span><div class="sub" id="notifSub">準備中：次の段階でつなぎます</div></span>
@@ -384,7 +445,20 @@ const lastDateOf = id => {
   const rs = recsOf(id);
   return rs.length ? rs.map(r=>r.dateStr).sort().pop() : null;
 };
-const doneTodayOf = (id, t) => recsOf(id).filter(r=>r.dateStr === t).length;
+
+/* ================= グループ ================= */
+const DEF_GROUPS = ['掃除','家事','健康','仕事'];
+const PALETTE = ['#2C5FA8','#0E8A6B','#B4571A','#7A4FBF','#C13E6A','#3E8FC1','#8A7A22'];
+const ls = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const groups = ()=> ls.get('kk.groups', DEF_GROUPS);
+/* グループ名から色を決める。並び順が変わっても色が飛ばないよう名前から引く */
+function colorOf(name){
+  const i = groups().indexOf(name);
+  return i < 0 ? 'var(--muted)' : PALETTE[i % PALETTE.length];
+}
 
 /* ================= 画面遷移・通知 ================= */
 const views = ['home','form','detail','rec','settings'];
@@ -406,6 +480,15 @@ function updateBadge(n){
     if(!('setAppBadge' in navigator)) return;
     if(n > 0) navigator.setAppBadge(n); else navigator.clearAppBadge();
   }catch(e){}
+}
+function fmtDate(s){
+  const d = parseDate(s);
+  const w = ['日','月','火','水','木','金','土'][d.getDay()];
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日(${w})`;
+}
+function fmtShort(s){
+  const d = parseDate(s);
+  return `${d.getMonth()+1}月${d.getDate()}日`;
 }
 
 /* ================= 写真の縮小（保存用） ================= */
@@ -444,33 +527,76 @@ function urlFor(key, blob){
 }
 
 /* ================= ホーム ================= */
+let fGroup = '';   // 絞り込み中のグループ。'' はすべて
+
+function renderGroupChips(){
+  const el = document.getElementById('groupChips');
+  const used = groups().filter(g => tasks.some(t => t.group === g));
+  el.classList.toggle('hidden', used.length === 0);
+  el.innerHTML = '';
+  if(!used.length){ fGroup = ''; return; }
+  if(fGroup && !used.includes(fGroup)) fGroup = '';
+  const mk = (label, val, color)=>{
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.setAttribute('aria-pressed', fGroup === val);
+    if(fGroup === val && color) b.style.background = color;
+    if(color){
+      const d = document.createElement('span');
+      d.className = 'dot';
+      if(fGroup !== val) d.style.background = color;
+      b.appendChild(d);
+    }
+    const s = document.createElement('span');
+    s.textContent = label;
+    b.appendChild(s);
+    b.onclick = ()=>{ fGroup = (fGroup === val ? '' : val); renderHome(); };
+    return b;
+  };
+  const all = mk('すべて', '', null);
+  if(fGroup === '') all.style.background = 'var(--accent)';
+  el.appendChild(all);
+  used.forEach(g => el.appendChild(mk(g, g, colorOf(g))));
+}
+
 function taskRow(task, t){
   const row = document.createElement('div');
   row.className = 'trow';
+  if(task.group) row.style.borderLeftColor = colorOf(task.group);
+
   const chk = document.createElement('button');
   chk.className = 'tchk';
   chk.textContent = '✓';
   chk.setAttribute('aria-label', task.name + ' を完了');
   chk.onclick = ()=>quickComplete(task);
+
   const main = document.createElement('button');
   main.className = 'tmain';
   const nm = document.createElement('div');
   nm.className = 'tname'; nm.textContent = task.name;
   const sub = document.createElement('div');
   sub.className = 'tsub';
-  const last = lastDateOf(task.id);
-  const lastLabel = last ? agoLabel(last, t) : 'まだ記録なし';
-  if(task.type === 'interval'){
-    sub.textContent = `前回 ${lastLabel}・${intervalLabel(task)}`;
-  }else{
-    sub.textContent = `前回 ${lastLabel}・記録${recsOf(task.id).length}回`;
+  if(task.group){
+    const g = document.createElement('span');
+    g.className = 'tgrp';
+    g.style.color = colorOf(task.group);
+    g.textContent = task.group;
+    sub.append(g, document.createTextNode('·'));
   }
+  const last = lastDateOf(task.id);
+  const txt = document.createElement('span');
+  const lastLabel = last ? agoLabel(last, t) : 'まだ記録なし';
+  txt.textContent = task.type === 'interval'
+    ? `前回 ${lastLabel}・${intervalLabel(task)}`
+    : `前回 ${lastLabel}・記録${recsOf(task.id).length}回`;
+  sub.appendChild(txt);
   main.append(nm, sub);
   main.onclick = ()=>openDetail(task.id);
+
   const stat = document.createElement('span');
   stat.className = 'tstat';
   if(task.type === 'interval'){
-    const d = dueLabel(task, t, doneTodayOf(task.id, t));
+    const d = dueLabel(task, t);
     stat.textContent = d.text;
     stat.classList.add(d.cls);
     if(d.cls === 'over') row.classList.add('overdue');
@@ -486,11 +612,13 @@ function renderHome(){
   const wrap = document.getElementById('homeSections');
   const empty = document.getElementById('homeEmpty');
   wrap.innerHTML = '';
+  renderGroupChips();
   empty.classList.toggle('hidden', tasks.length > 0);
   if(!tasks.length){ updateBadge(0); return; }
 
+  const list = fGroup ? tasks.filter(x => x.group === fGroup) : tasks;
   const due = [], later = [], anytime = [];
-  tasks.forEach(task=>{
+  list.forEach(task=>{
     if(task.type !== 'interval'){ anytime.push(task); return; }
     (diffDays(t, task.nextDue) <= 0 ? due : later).push(task);
   });
@@ -498,18 +626,26 @@ function renderHome(){
   later.sort((a,b)=> a.nextDue < b.nextDue ? -1 : 1);
   anytime.sort((a,b)=> (lastDateOf(b.id)||'') < (lastDateOf(a.id)||'') ? -1 : 1);
 
-  const section = (label, list)=>{
-    if(!list.length) return;
+  const section = (label, arr)=>{
+    if(!arr.length) return;
     const h = document.createElement('div');
     h.className = 'rowlabel';
-    h.innerHTML = `<span>${label}</span><span>${list.length}</span>`;
+    h.innerHTML = `<span>${label}</span><span>${arr.length}</span>`;
     wrap.appendChild(h);
-    list.forEach(task=>wrap.appendChild(taskRow(task, t)));
+    arr.forEach(task=>wrap.appendChild(taskRow(task, t)));
   };
   section('今日やること', due);
   section('今後', later);
   section('いつでも', anytime);
-  updateBadge(due.length);
+
+  if(!due.length && !later.length && !anytime.length){
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = `「${fGroup}」のタスクはありません。`;
+    wrap.appendChild(e);
+  }
+  // バッジは絞り込みに関係なく、今日やること全体の件数
+  updateBadge(tasks.filter(x => x.type === 'interval' && diffDays(t, x.nextDue) <= 0).length);
 }
 
 /* ================= 完了 ================= */
@@ -518,78 +654,104 @@ async function addRecord(task, dateStr){
   await dbPut('records', rec);
   records.push(rec);
   if(task.type === 'interval'){
-    // 当日・超過・前倒しのどの完了でも、次回は「完了した日」から数え直す。
-    // 1日複数回のタスクは、その日の回数がそろってから次回を進める
-    const per = task.times || 1;
-    if(doneTodayOf(task.id, dateStr) >= per){
-      task.nextDue = nextFrom(dateStr, task);
-      await dbPut('tasks', task);
-    }
+    // 完了した日を新しい起点にして、次回を数え直す
+    task.start = dateStr;
+    task.nextDue = nextFrom(dateStr, task);
+    await dbPut('tasks', task);
   }
   return rec;
 }
 async function quickComplete(task){
-  const rec = await addRecord(task, todayStr());
-  const per = task.times || 1;
-  const n = doneTodayOf(task.id, rec.dateStr);
-  if(task.type === 'interval' && per > 1 && n < per){
-    toast(`「${task.name}」 今日 ${n}/${per} 回目を記録しました`);
-  }else{
-    toast(`「${task.name}」を完了しました`);
-  }
+  await addRecord(task, todayStr());
+  toast(`「${task.name}」を完了しました`);
   renderHome();
 }
 
 /* ================= タスクの追加・編集 ================= */
 let editingTask = null;   // 編集中のタスクid。新規はnull
-function syncTypeFields(){
-  const isInt = document.getElementById('f_type').value === 'interval';
-  document.getElementById('intervalFields').classList.toggle('hidden', !isInt);
+const $ = id => document.getElementById(id);
+
+function fillGroupSelect(chosen){
+  const el = $('f_group');
+  el.innerHTML = '';
+  const none = document.createElement('option');
+  none.value = ''; none.textContent = 'なし';
+  el.appendChild(none);
+  groups().forEach(g=>{
+    const o = document.createElement('option');
+    o.value = g; o.textContent = g;
+    el.appendChild(o);
+  });
+  el.value = groups().includes(chosen) ? chosen : '';
 }
-document.getElementById('f_type').onchange = syncTypeFields;
+/* 単位・間隔・開始日から「次の実施予定日」を出して見せる */
+function syncForm(){
+  const unit = $('f_unit').value;
+  const isInt = unit !== 'none';
+  $('everyRow').classList.toggle('hidden', !isInt);
+  $('schedSection').classList.toggle('hidden', !isInt);
+  if(!isInt) return;
+  const every = clampEvery($('f_every').value);
+  $('everyMinus').disabled = every <= 1;
+  const start = $('f_start').value || todayStr();
+  const next = nextFrom(start, {every, unit});
+  $('nextPreview').textContent = fmtDate(next);
+  $('schedHint').textContent =
+    `開始日から ${every}${unitLabel(unit)} 後の ${fmtShort(next)} が次の実施予定日になります。`;
+}
+function clampEvery(v){ return Math.max(1, Math.min(365, Number(v) || 1)); }
+$('f_unit').onchange = syncForm;
+$('f_every').oninput = syncForm;
+$('f_start').onchange = syncForm;
+$('everyMinus').onclick = ()=>{ $('f_every').value = clampEvery(Number($('f_every').value) - 1); syncForm(); };
+$('everyPlus').onclick  = ()=>{ $('f_every').value = clampEvery(Number($('f_every').value) + 1); syncForm(); };
+
 function openForm(id){
   editingTask = id || null;
   const task = id ? tasks.find(x=>x.id===id) : null;
-  document.getElementById('formTitle').textContent = task ? 'タスクを編集' : 'タスクを追加';
-  document.getElementById('f_name').value  = task ? task.name : '';
-  document.getElementById('f_type').value  = task ? task.type : 'interval';
-  document.getElementById('f_every').value = task && task.every ? task.every : 1;
-  document.getElementById('f_unit').value  = task && task.unit ? task.unit : 'day';
-  document.getElementById('f_times').value = task && task.times ? task.times : 1;
-  document.getElementById('f_next').value  = task && task.nextDue ? task.nextDue : todayStr();
-  document.getElementById('f_note').value  = task ? (task.note || '') : '';
-  document.getElementById('formDel').classList.toggle('hidden', !task);
-  syncTypeFields();
+  $('formTitle').textContent = task ? 'タスクを編集' : '新規タスク';
+  $('f_name').value  = task ? task.name : '';
+  fillGroupSelect(task ? task.group : '');
+  $('f_unit').value  = task ? (task.type === 'interval' ? task.unit : 'none') : 'day';
+  $('f_every').value = task && task.every ? task.every : 5;
+  $('f_start').value = task && task.start ? task.start : todayStr();
+  $('f_note').value  = task ? (task.note || '') : '';
+  $('formDel').classList.toggle('hidden', !task);
+  syncForm();
   show('form');
 }
 async function saveForm(){
-  const name = document.getElementById('f_name').value.trim();
+  const name = $('f_name').value.trim();
   if(!name){ toast('名前を入れてください'); return; }
-  const type = document.getElementById('f_type').value;
-  const every = Math.max(1, Math.min(365, Number(document.getElementById('f_every').value) || 1));
-  const unit  = document.getElementById('f_unit').value;
-  const times = Number(document.getElementById('f_times').value) || 1;
-  const next  = document.getElementById('f_next').value || todayStr();
-  const note  = document.getElementById('f_note').value.trim();
+  const unit  = $('f_unit').value;
+  const group = $('f_group').value;
+  const note  = $('f_note').value.trim();
 
   const task = editingTask ? tasks.find(x=>x.id===editingTask) : {id: crypto.randomUUID(), createdAt: Date.now()};
-  Object.assign(task, {name, type, note, updatedAt: Date.now()});
-  if(type === 'interval'){
-    Object.assign(task, {every, unit, times, nextDue: next});
+  const wasDue = task.nextDue;
+  Object.assign(task, {name, group, note, updatedAt: Date.now()});
+
+  if(unit === 'none'){
+    task.type = 'anytime';
+    delete task.every; delete task.unit; delete task.start; delete task.nextDue;
   }else{
-    delete task.every; delete task.unit; delete task.times; delete task.nextDue;
+    const every = clampEvery($('f_every').value);
+    const start = $('f_start').value || todayStr();
+    Object.assign(task, {type:'interval', every, unit, start, nextDue: nextFrom(start, {every, unit})});
   }
   await dbPut('tasks', task);
   if(!editingTask) tasks.push(task);
-  toast('保存しました');
+  toast(editingTask && wasDue && task.nextDue !== wasDue
+    ? `保存しました（次回 ${fmtShort(task.nextDue)}）`
+    : '保存しました');
   renderHome();
   if(editingTask) openDetail(task.id); else show('home');
 }
-document.getElementById('fab').onclick = ()=>openForm(null);
-document.getElementById('formSave').onclick  = saveForm;
-document.getElementById('formSave2').onclick = saveForm;
-document.getElementById('formCancel').onclick = ()=>{ if(editingTask) openDetail(editingTask); else show('home'); };
-document.getElementById('formDel').onclick = async ()=>{
+$('fab').onclick = ()=>openForm(null);
+$('formSave').onclick  = saveForm;
+$('formSave2').onclick = saveForm;
+$('formCancel').onclick = ()=>{ if(editingTask) openDetail(editingTask); else show('home'); };
+$('formDel').onclick = async ()=>{
   const task = tasks.find(x=>x.id===editingTask);
   const n = recsOf(task.id).length;
   if(!confirm(`「${task.name}」を削除します。記録${n}件も一緒に消えます。元に戻せません。`)) return;
@@ -604,46 +766,55 @@ document.getElementById('formDel').onclick = async ()=>{
 
 /* ================= 詳細 ================= */
 let detailId = null;
-function fmtDate(s){
-  const d = parseDate(s);
-  const w = ['日','月','火','水','木','金','土'][d.getDay()];
-  return `${d.getMonth()+1}月${d.getDate()}日(${w})`;
-}
 function openDetail(id){
   detailId = id;
   const task = tasks.find(x=>x.id===id);
   if(!task) return show('home');
   const t = todayStr();
-  document.getElementById('dName').textContent = task.name;
-  const last = lastDateOf(id);
-  document.getElementById('dSub').textContent =
-    intervalLabel(task) + (task.type==='interval' && (task.times||1) > 1 ? `・1日${task.times}回` : '');
-  const note = document.getElementById('dNote');
+  $('dName').textContent = task.name;
+
+  const sub = $('dSub');
+  sub.innerHTML = '';
+  if(task.group){
+    const d = document.createElement('span');
+    d.className = 'dot'; d.style.background = colorOf(task.group);
+    const g = document.createElement('span');
+    g.style.color = colorOf(task.group); g.style.fontWeight = '700';
+    g.textContent = task.group;
+    sub.append(d, g, document.createTextNode('·'));
+  }
+  const s = document.createElement('span');
+  s.textContent = intervalLabel(task);
+  sub.appendChild(s);
+
+  const note = $('dNote');
   note.textContent = task.note || '';
   note.classList.toggle('hidden', !task.note);
 
-  const card = document.getElementById('dDueCard');
+  const card = $('dDueCard');
   if(task.type === 'interval'){
     card.classList.remove('hidden');
-    const d = dueLabel(task, t, doneTodayOf(id, t));
-    const v = document.getElementById('dDueVal');
+    const d = dueLabel(task, t);
+    const v = $('dDueVal');
     v.textContent = `${fmtDate(task.nextDue)}（${d.text}）`;
     v.className = 'dval ' + d.cls;
+    $('ppCycle').textContent = `＋${task.every}${unitLabel(task.unit)}`;
   }else{
     card.classList.add('hidden');
   }
 
   const rs = recsOf(id);
-  document.getElementById('stCount').innerHTML = `${rs.length}<small> 回</small>`;
-  document.getElementById('stLast').textContent = last ? agoLabel(last, t) : '—';
+  const last = lastDateOf(id);
+  $('stCount').innerHTML = `${rs.length}<small> 回</small>`;
+  $('stLast').textContent = last ? agoLabel(last, t) : '—';
   const avg = avgInterval(rs.map(r=>r.dateStr));
-  document.getElementById('stAvg').innerHTML = avg === null ? '—' : `${avg}<small> 日</small>`;
+  $('stAvg').innerHTML = avg === null ? '—' : `${avg}<small> 日</small>`;
 
   renderRecs(task);
   show('detail');
 }
 function renderRecs(task){
-  const wrap = document.getElementById('dRecs');
+  const wrap = $('dRecs');
   wrap.innerHTML = '';
   const rs = recsOf(task.id).sort((a,b)=> a.dateStr === b.dateStr ? b.at - a.at : (a.dateStr < b.dateStr ? 1 : -1));
   if(!rs.length){
@@ -695,40 +866,47 @@ function renderRecs(task){
     wrap.appendChild(b);
   });
 }
-document.getElementById('dBack').onclick = ()=>{ renderHome(); show('home'); };
-document.getElementById('dEdit').onclick = ()=>openForm(detailId);
-document.getElementById('dDone').onclick = async ()=>{
+$('dBack').onclick = ()=>{ renderHome(); show('home'); };
+$('dEdit').onclick = ()=>openForm(detailId);
+$('dDone').onclick = async ()=>{
   const task = tasks.find(x=>x.id===detailId);
   const rec = await addRecord(task, todayStr());
   toast('完了を記録しました。メモや写真も残せます');
   openRec(rec.id);
 };
-document.getElementById('dAddRec').onclick = async ()=>{
+$('dAddRec').onclick = ()=>{
   const task = tasks.find(x=>x.id===detailId);
-  const rec = {id: crypto.randomUUID(), taskId: task.id, at: Date.now(), dateStr: todayStr(), memo:'', photos:[], _new:true};
-  openRec(null, rec);
+  openRec(null, {id: crypto.randomUUID(), taskId: task.id, at: Date.now(), dateStr: todayStr(), memo:'', photos:[], _new:true});
 };
 
-/* 延期 */
+/* 延期。予定日を動かしたぶん起点もずらし、「起点＋間隔＝予定日」を保つ */
+async function postponeTo(task, dateStr){
+  task.nextDue = dateStr;
+  task.start = prevFrom(dateStr, task);
+  await dbPut('tasks', task);
+  toast(`次回を ${fmtShort(dateStr)} にしました`);
+  openDetail(task.id);
+}
 document.querySelectorAll('.pp[data-pp]').forEach(b=>{
-  b.onclick = async ()=>{
+  b.onclick = ()=>{
     const task = tasks.find(x=>x.id===detailId);
     const t = todayStr();
     const base = diffDays(t, task.nextDue) < 0 ? t : task.nextDue;  // 超過中は今日から数える
-    task.nextDue = addDays(base, Number(b.dataset.pp));
-    await dbPut('tasks', task);
-    toast(`次回を ${fmtDate(task.nextDue)} にしました`);
-    openDetail(detailId);
+    postponeTo(task, addDays(base, Number(b.dataset.pp)));
   };
 });
-document.getElementById('ppDate').onclick = async ()=>{
+$('ppCycle').onclick = ()=>{
   const task = tasks.find(x=>x.id===detailId);
-  const v = prompt('次回の予定日（例 2026-08-01）', task.nextDue);
+  const t = todayStr();
+  const base = diffDays(t, task.nextDue) < 0 ? t : task.nextDue;
+  postponeTo(task, nextFrom(base, task));
+};
+$('ppDate').onclick = ()=>{
+  const task = tasks.find(x=>x.id===detailId);
+  const v = prompt('次の実施予定日（例 2026-08-01）', task.nextDue);
   if(!v) return;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(v.trim())){ toast('2026-08-01 の形式で入れてください'); return; }
-  task.nextDue = v.trim();
-  await dbPut('tasks', task);
-  openDetail(detailId);
+  postponeTo(task, v.trim());
 };
 
 /* ================= 記録の編集 ================= */
@@ -737,15 +915,15 @@ function openRec(id, fresh){
   const src = fresh || records.find(r=>r.id===id);
   if(!src) return;
   recDraft = {id:src.id, taskId:src.taskId, at:src.at, dateStr:src.dateStr, memo:src.memo, photos:(src.photos||[]).slice(), _new:!!src._new};
-  document.getElementById('recTitle').textContent = fresh ? '記録を追加' : '記録';
-  document.getElementById('r_date').value = recDraft.dateStr;
-  document.getElementById('r_memo').value = recDraft.memo || '';
-  document.getElementById('recDel').classList.toggle('hidden', !!fresh);
+  $('recTitle').textContent = fresh ? '記録を追加' : '記録';
+  $('r_date').value = recDraft.dateStr;
+  $('r_memo').value = recDraft.memo || '';
+  $('recDel').classList.toggle('hidden', !!fresh);
   renderRecPhotos();
   show('rec');
 }
 function renderRecPhotos(){
-  const g = document.getElementById('recPhotos');
+  const g = $('recPhotos');
   g.innerHTML = '';
   recDraft.photos.forEach((p, i)=>{
     const cell = document.createElement('div');
@@ -764,10 +942,10 @@ function renderRecPhotos(){
   const add = document.createElement('button');
   add.className = 'paddbtn'; add.textContent = '＋';
   add.setAttribute('aria-label','写真を追加');
-  add.onclick = ()=>document.getElementById('photoPick').click();
+  add.onclick = ()=>$('photoPick').click();
   g.appendChild(add);
 }
-document.getElementById('photoPick').onchange = async e=>{
+$('photoPick').onchange = async e=>{
   const files = Array.from(e.target.files || []);
   e.target.value = '';
   if(!files.length) return;
@@ -777,23 +955,20 @@ document.getElementById('photoPick').onchange = async e=>{
   toast(`写真を${files.length}枚付けました（保存を押してください）`);
 };
 async function saveRec(){
-  const task = tasks.find(x=>x.id===recDraft.taskId);
-  recDraft.dateStr = document.getElementById('r_date').value || recDraft.dateStr;
-  recDraft.memo = document.getElementById('r_memo').value.trim();
+  const taskId = recDraft.taskId;
+  recDraft.dateStr = $('r_date').value || recDraft.dateStr;
+  recDraft.memo = $('r_memo').value.trim();
   const isNew = recDraft._new; delete recDraft._new;
   await dbPut('records', recDraft);
   if(isNew) records.push(recDraft);
-  else{
-    const i = records.findIndex(r=>r.id===recDraft.id);
-    records[i] = recDraft;
-  }
+  else records[records.findIndex(r=>r.id===recDraft.id)] = recDraft;
   toast('保存しました');
-  openDetail(task.id);
+  openDetail(taskId);
 }
-document.getElementById('recSave').onclick  = saveRec;
-document.getElementById('recSave2').onclick = saveRec;
-document.getElementById('recCancel').onclick = ()=>openDetail(recDraft.taskId);
-document.getElementById('recDel').onclick = async ()=>{
+$('recSave').onclick  = saveRec;
+$('recSave2').onclick = saveRec;
+$('recCancel').onclick = ()=>openDetail(recDraft.taskId);
+$('recDel').onclick = async ()=>{
   if(!confirm('この記録を削除します。元に戻せません。')) return;
   await dbDel('records', recDraft.id);
   records = records.filter(r=>r.id!==recDraft.id);
@@ -803,32 +978,48 @@ document.getElementById('recDel').onclick = async ()=>{
 
 /* ================= 拡大 ================= */
 function openLightbox(blob){
-  document.getElementById('lbImg').src = urlFor('lb', blob);
-  document.getElementById('lightbox').classList.add('on');
+  $('lbImg').src = urlFor('lb', blob);
+  $('lightbox').classList.add('on');
 }
-document.getElementById('lbClose').onclick = ()=>document.getElementById('lightbox').classList.remove('on');
+$('lbClose').onclick = ()=>$('lightbox').classList.remove('on');
 
 /* ================= 設定 ================= */
-document.getElementById('toSettings').onclick = ()=>{ renderSettings(); show('settings'); };
-document.getElementById('setBack').onclick = ()=>{ renderHome(); show('home'); };
-document.getElementById('notifRow').onclick = ()=>toast('通知はこれから設定します（第2段階）');
+$('toSettings').onclick = ()=>{ renderSettings(); show('settings'); };
+$('setBack').onclick = ()=>{ renderHome(); show('home'); };
+$('notifRow').onclick = ()=>toast('通知はこれから設定します（第2段階）');
 
 async function renderSettings(){
+  $('groupSub').textContent = groups().join(' / ');
   let size = '';
   try{
     const est = await navigator.storage.estimate();
     size = ' · 約 ' + (est.usage / 1048576).toFixed(1) + ' MB';
   }catch(e){}
-  document.getElementById('storage').innerHTML =
+  $('storage').innerHTML =
     `タスク${tasks.length}件 · 記録${records.length}件${size}<br><span style="color:var(--muted)">この端末の中にのみ保存されています</span>`;
 }
+$('groupEdit').onclick = ()=>{
+  const cur = groups();
+  const v = prompt('グループを「/」区切りで並べてください。', cur.join(' / '));
+  if(v === null) return;
+  const list = v.split('/').map(s=>s.trim()).filter(Boolean).slice(0, 12);
+  if(!list.length){ toast('1つ以上必要です'); return; }
+  const gone = cur.filter(g => !list.includes(g) && tasks.some(t => t.group === g));
+  if(gone.length && !confirm(`「${gone.join('」「')}」を使っているタスクは、グループなしになります。よろしいですか？`)) return;
+  ls.set('kk.groups', list);
+  tasks.forEach(async t => {
+    if(t.group && !list.includes(t.group)){ t.group = ''; await dbPut('tasks', t); }
+  });
+  renderSettings(); renderHome();
+  toast('変更しました');
+};
 
 /* バックアップ */
 function blobToDataURL(b){
   return new Promise(res=>{ const r = new FileReader(); r.onload = ()=>res(r.result); r.readAsDataURL(b); });
 }
 async function dataURLtoBlob(u){ return (await fetch(u)).blob(); }
-document.getElementById('expBtn').onclick = async ()=>{
+$('expBtn').onclick = async ()=>{
   if(!tasks.length){ toast('書き出すものがありません'); return; }
   toast('書き出し中…');
   const recsOut = [];
@@ -839,7 +1030,7 @@ document.getElementById('expBtn').onclick = async ()=>{
     }
     recsOut.push({taskId:r.taskId, at:r.at, dateStr:r.dateStr, memo:r.memo, photos});
   }
-  const json = JSON.stringify({app:'kurikaeshi', version:1, exportedAt:Date.now(), tasks, records:recsOut});
+  const json = JSON.stringify({app:'kurikaeshi', version:2, exportedAt:Date.now(), groups:groups(), tasks, records:recsOut});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([json], {type:'application/json'}));
   a.download = `くりかえし帳_${todayStr()}.json`;
@@ -847,8 +1038,8 @@ document.getElementById('expBtn').onclick = async ()=>{
   setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
   toast(`タスク${tasks.length}件・記録${records.length}件を書き出しました`);
 };
-document.getElementById('impBtn').onclick = ()=>document.getElementById('fileImport').click();
-document.getElementById('fileImport').onchange = async e=>{
+$('impBtn').onclick = ()=>$('fileImport').click();
+$('fileImport').onchange = async e=>{
   const f = e.target.files[0]; e.target.value = '';
   if(!f) return;
   try{
@@ -856,11 +1047,17 @@ document.getElementById('fileImport').onchange = async e=>{
     if(data.app !== 'kurikaeshi' || !Array.isArray(data.tasks)) throw new Error('形式が違います');
     if(!confirm(`タスク${data.tasks.length}件・記録${(data.records||[]).length}件を追加します。いまの中身は消えません。`)) return;
     toast('読み込み中…');
+    if(Array.isArray(data.groups) && data.groups.length){
+      const merged = groups().slice();
+      data.groups.forEach(g=>{ if(!merged.includes(g)) merged.push(g); });
+      ls.set('kk.groups', merged.slice(0, 12));
+    }
     const idMap = new Map();
     for(const o of data.tasks){
       const nid = crypto.randomUUID();
       idMap.set(o.id, nid);
       const task = Object.assign({}, o, {id: nid});
+      migrate(task);
       await dbPut('tasks', task);
       tasks.push(task);
     }
@@ -869,8 +1066,9 @@ document.getElementById('fileImport').onchange = async e=>{
       for(const p of (o.photos || [])){
         photos.push({id: crypto.randomUUID(), full: await dataURLtoBlob(p.full), thumb: await dataURLtoBlob(p.thumb)});
       }
-      const rec = {id: crypto.randomUUID(), taskId: idMap.get(o.taskId), at: o.at || Date.now(), dateStr: o.dateStr, memo: o.memo || '', photos};
-      if(!rec.taskId) continue;
+      const taskId = idMap.get(o.taskId);
+      if(!taskId) continue;
+      const rec = {id: crypto.randomUUID(), taskId, at: o.at || Date.now(), dateStr: o.dateStr, memo: o.memo || '', photos};
       await dbPut('records', rec);
       records.push(rec);
     }
@@ -883,6 +1081,17 @@ document.getElementById('fileImport').onchange = async e=>{
 };
 
 /* ================= 起動 ================= */
+/* 旧版のデータを今の形にそろえる（1日の実施回数は廃止、開始日を補う） */
+function migrate(task){
+  let dirty = false;
+  if('times' in task){ delete task.times; dirty = true; }
+  if(task.type === 'interval' && !task.start && task.nextDue){
+    task.start = prevFrom(task.nextDue, task);
+    dirty = true;
+  }
+  if(!('group' in task)){ task.group = ''; dirty = true; }
+  return dirty;
+}
 if('serviceWorker' in navigator && location.protocol === 'https:'){
   window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
@@ -890,7 +1099,10 @@ document.addEventListener('visibilitychange', ()=>{
   // 日付が変わっていたときのために、開き直すたびに今日基準で描き直す
   if(!document.hidden && current === 'home') renderHome();
 });
-loadAll().then(renderHome).catch(e=>toast('読み込みエラー: ' + e.message));
+loadAll().then(async ()=>{
+  for(const t of tasks){ if(migrate(t)) await dbPut('tasks', t); }
+  renderHome();
+}).catch(e=>toast('読み込みエラー: ' + e.message));
 </script>
 </body>
 </html>

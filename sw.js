@@ -1,7 +1,7 @@
 /* くりかえし帳 service worker
    役割1: アプリ本体を端末に置いて、電波が悪くても開けるようにする
    役割2: プッシュ通知を受け取って表示する（第2段階でサーバーとつなぐ） */
-const CACHE = 'kurikaeshi-v1';
+const CACHE = 'kurikaeshi-v2';
 const FILES = ['./', 'index.html', 'logic.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

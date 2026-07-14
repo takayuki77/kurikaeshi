@@ -14,18 +14,24 @@ function addMonths(s, n){
 }
 function diffDays(a, b){ return Math.round((parseDate(b) - parseDate(a)) / 86400000); }
 
-/* 完了した日から次回の予定日を出す */
+/* 起点の日から、次にやる日を出す（開始日 7/2・5日ごと → 7/7） */
 function nextFrom(s, task){
   if(task.unit === 'month') return addMonths(s, task.every);
   if(task.unit === 'week')  return addDays(s, task.every * 7);
   return addDays(s, task.every);
 }
+/* nextFrom の逆。予定日から起点の日を戻す（延期したときに使う） */
+function prevFrom(s, task){
+  if(task.unit === 'month') return addMonths(s, -task.every);
+  if(task.unit === 'week')  return addDays(s, -task.every * 7);
+  return addDays(s, -task.every);
+}
+function unitLabel(unit){
+  return unit === 'month' ? 'か月' : unit === 'week' ? '週間' : '日';
+}
 function intervalLabel(task){
   if(task.type !== 'interval') return 'いつでも';
-  const n = task.every;
-  if(task.unit === 'month') return n === 1 ? '毎月' : n + 'か月ごと';
-  if(task.unit === 'week')  return n === 1 ? '毎週' : n + '週間ごと';
-  return n === 1 ? '毎日' : n + '日ごと';
+  return task.every + unitLabel(task.unit) + 'ごと';
 }
 function agoLabel(dateStr, t){
   const d = diffDays(dateStr, t);
@@ -34,12 +40,11 @@ function agoLabel(dateStr, t){
   return d + '日前';
 }
 /* 一覧の右端に出す表示。cls: over=超過 / due=今日 / ok=まだ先 */
-function dueLabel(task, t, doneToday){
+function dueLabel(task, t){
   if(task.type !== 'interval') return null;
-  const per = task.times || 1;
   const d = diffDays(t, task.nextDue);
   if(d < 0) return {text: (-d) + '日超過', cls: 'over'};
-  if(d === 0) return {text: per > 1 ? doneToday + '/' + per + ' 今日' : '今日', cls: 'due'};
+  if(d === 0) return {text: '今日', cls: 'due'};
   return {text: 'あと' + d + '日', cls: 'ok'};
 }
 /* 平均間隔（日）。記録が2件未満なら null */
@@ -51,4 +56,4 @@ function avgInterval(dateStrs){
   return Math.round(sum / (s.length - 1));
 }
 
-if(typeof module !== 'undefined') module.exports = {dstr, parseDate, todayStr, addDays, addMonths, diffDays, nextFrom, intervalLabel, agoLabel, dueLabel, avgInterval};
+if(typeof module !== 'undefined') module.exports = {dstr, parseDate, todayStr, addDays, addMonths, diffDays, nextFrom, prevFrom, unitLabel, intervalLabel, agoLabel, dueLabel, avgInterval};
