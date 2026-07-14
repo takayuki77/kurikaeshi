@@ -1061,8 +1061,21 @@ $('photoPick').onchange = async e=>{
   renderRecPhotos();
   toast(`写真を${files.length}枚付けました（保存を押してください）`);
 };
+/* 一番新しい完了日が変わったら、その日を起点に次回を計算し直す。
+   （完了を押し忘れて過去の日付に直したときも、さかのぼって次回が決まる）
+   日付が変わっていないときは触らない。延期で動かした予定日を巻き戻さないため。 */
+async function reschedule(task, before){
+  if(!task || task.type !== 'interval') return null;
+  const after = lastDateOf(task.id);
+  if(!after || after === before) return null;
+  task.nextDue = nextFrom(after, task);
+  await dbPut('tasks', task);
+  return task.nextDue;
+}
 async function saveRec(){
   const taskId = recDraft.taskId;
+  const task = tasks.find(x=>x.id===taskId);
+  const before = lastDateOf(taskId);
   // 延期の記録は「延期した日」で固定。日付欄も出していない
   if(recDraft.type !== 'postpone') recDraft.dateStr = $('r_date').value || recDraft.dateStr;
   recDraft.memo = $('r_memo').value.trim();
@@ -1070,7 +1083,8 @@ async function saveRec(){
   await dbPut('records', recDraft);
   if(isNew) records.push(recDraft);
   else records[records.findIndex(r=>r.id===recDraft.id)] = recDraft;
-  toast('保存しました');
+  const moved = await reschedule(task, before);
+  toast(moved ? `保存しました（次回 ${fmtShort(moved)}）` : '保存しました');
   openDetail(taskId);
 }
 $('recSave').onclick  = saveRec;
@@ -1078,10 +1092,14 @@ $('recSave2').onclick = saveRec;
 $('recCancel').onclick = ()=>openDetail(recDraft.taskId);
 $('recDel').onclick = async ()=>{
   if(!confirm('この記録を削除します。元に戻せません。')) return;
+  const taskId = recDraft.taskId;
+  const task = tasks.find(x=>x.id===taskId);
+  const before = lastDateOf(taskId);
   await dbDel('records', recDraft.id);
   records = records.filter(r=>r.id!==recDraft.id);
-  toast('削除しました');
-  openDetail(recDraft.taskId);
+  const moved = await reschedule(task, before);
+  toast(moved ? `削除しました（次回 ${fmtShort(moved)}）` : '削除しました');
+  openDetail(taskId);
 };
 
 /* ================= 拡大 ================= */
