@@ -60,20 +60,14 @@
   .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--muted)}
   .chip[aria-pressed="true"] .dot{background:rgba(255,255,255,.85)}
 
-  /* タスク一覧の行 */
+  /* タスク一覧の行。行ごとタップして詳細を開く（誤タップで完了しないよう✓ボタンは置かない） */
   .trow{
-    display:flex;align-items:center;gap:11px;background:var(--surface);
+    display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--surface);
     border:1px solid var(--line);border-left-width:4px;
-    border-radius:11px;padding:10px 12px;margin-bottom:8px;
+    border-radius:11px;padding:12px;margin-bottom:8px;
   }
   .trow.overdue{border-color:var(--signal)}
-  .tchk{
-    flex:none;width:34px;height:34px;border-radius:50%;
-    border:2px solid var(--line);color:transparent;font-size:17px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .tchk:active{background:var(--accent-q);border-color:var(--accent);color:var(--accent)}
-  .tmain{flex:1;text-align:left;min-width:0}
+  .tmain{flex:1;min-width:0}
   .tname{font-size:15px;font-weight:700;line-height:1.4;word-break:break-word}
   .tsub{font-size:11.5px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
   .tgrp{font-weight:700}
@@ -560,17 +554,12 @@ function renderGroupChips(){
 }
 
 function taskRow(task, t){
-  const row = document.createElement('div');
+  const row = document.createElement('button');
   row.className = 'trow';
+  row.onclick = ()=>openDetail(task.id);
   if(task.group) row.style.borderLeftColor = colorOf(task.group);
 
-  const chk = document.createElement('button');
-  chk.className = 'tchk';
-  chk.textContent = '✓';
-  chk.setAttribute('aria-label', task.name + ' を完了');
-  chk.onclick = ()=>quickComplete(task);
-
-  const main = document.createElement('button');
+  const main = document.createElement('div');
   main.className = 'tmain';
   const nm = document.createElement('div');
   nm.className = 'tname'; nm.textContent = task.name;
@@ -591,7 +580,6 @@ function taskRow(task, t){
     : `前回 ${lastLabel}・記録${recsOf(task.id).length}回`;
   sub.appendChild(txt);
   main.append(nm, sub);
-  main.onclick = ()=>openDetail(task.id);
 
   const stat = document.createElement('span');
   stat.className = 'tstat';
@@ -604,7 +592,7 @@ function taskRow(task, t){
     stat.classList.add('free');
     stat.textContent = last ? agoLabel(last, t) : '—';
   }
-  row.append(chk, main, stat);
+  row.append(main, stat);
   return row;
 }
 function renderHome(){
@@ -659,11 +647,6 @@ async function addRecord(task, dateStr){
     await dbPut('tasks', task);
   }
   return rec;
-}
-async function quickComplete(task){
-  await addRecord(task, todayStr());
-  toast(`「${task.name}」を完了しました`);
-  renderHome();
 }
 
 /* ================= タスクの追加・編集 ================= */
