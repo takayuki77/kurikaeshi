@@ -16,11 +16,13 @@
   :root{
     --paper:#F1F2F0; --surface:#fff; --line:#DDDFDC; --ink:#181C1B; --muted:#6B7472;
     --accent:#2C5FA8; --accent-q:#DFE8F4; --signal:#B4571A; --signal-q:#F3E4D5;
+    --ok:#0E7A5F;
     --safe-t:env(safe-area-inset-top); --safe-b:env(safe-area-inset-bottom);
   }
   @media (prefers-color-scheme:dark){
     :root{ --paper:#101312; --surface:#1A1F1E; --line:#2E3533; --ink:#E4E8E6; --muted:#939C99;
-      --accent:#82AADF; --accent-q:#1E2A3B; --signal:#D98B4E; --signal-q:#33261B; }
+      --accent:#82AADF; --accent-q:#1E2A3B; --signal:#D98B4E; --signal-q:#33261B;
+      --ok:#57B7A8; }
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -136,13 +138,19 @@
   .subline{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .notebox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;white-space:pre-wrap;font-size:13.5px;line-height:1.8;color:var(--muted)}
 
-  .duecard{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:12px 13px;margin-top:12px}
-  .duecard .dtop{display:flex;justify-content:space-between;align-items:baseline}
-  .duecard .dlab{font-size:11.5px;color:var(--muted);font-weight:700}
-  .duecard .dval{font-size:16px;font-weight:700}
-  .duecard .dval.over{color:var(--signal)}
-  .duecard .dval.due{color:var(--accent)}
-  .pprow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
+  /* 進み具合のバー */
+  .duecard{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:12px}
+  .dstate{font-size:17px;font-weight:700;display:flex;align-items:center;gap:6px}
+  .dstate.over{color:var(--signal)}
+  .dstate.due{color:var(--accent)}
+  .dstate.done{color:var(--ok)}
+  .pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:9px 0 6px}
+  .pbar i{display:block;height:100%;border-radius:3px;background:var(--accent);width:0}
+  .pbar.over i{background:var(--signal)}
+  .pbar.done i{background:var(--ok)}
+  .pends{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:var(--muted)}
+  .pends b{color:var(--ink);font-weight:700}
+  .pprow{display:flex;gap:6px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);flex-wrap:wrap;align-items:center}
   .pp{font-size:12.5px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--paper)}
 
   .statrow{display:flex;gap:8px;margin-top:12px}
@@ -152,17 +160,30 @@
   .stat .sk{font-size:10.5px;color:var(--muted);margin-top:1px}
 
   /* 記録タイムライン */
+  .dots{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:10px 0 2px}
+  .dots i{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+  .dots i.late{background:var(--signal)}
+  .dots span{font-size:11px;color:var(--muted);margin-left:4px}
+  .recfilter{font-size:12px;padding:0;color:var(--muted);font-weight:700}
+  .recfilter[aria-pressed="true"]{color:var(--accent)}
+
   .rec{
     display:flex;gap:11px;background:var(--surface);border:1px solid var(--line);
     border-radius:11px;padding:10px 12px;margin-bottom:8px;width:100%;text-align:left;align-items:flex-start;
   }
+  .rec.pp{background:none;border-style:dashed}
   .rdate{flex:none;width:64px;text-align:center;color:var(--muted)}
   .rdate .rm{font-size:10.5px}
   .rdate .rd{font-size:17px;font-weight:700;color:var(--ink);line-height:1.2}
   .rbody{flex:1;min-width:0}
+  .rtop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .rkind{font-size:12px;font-weight:700;color:var(--ok)}
+  .rkind.pp{color:var(--muted)}
   .rgap{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:5px;background:var(--accent-q);color:var(--accent)}
+  .rgap.late{background:var(--signal-q);color:var(--signal)}
   .rmemo{font-size:13.5px;margin-top:3px;word-break:break-word;white-space:pre-wrap}
   .rmemo.none{color:var(--muted);font-size:12px}
+  .rmove{font-size:11.5px;color:var(--muted);margin-top:2px}
   .rphotos{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
   .rphotos img{width:56px;height:56px;object-fit:cover;border-radius:8px;background:var(--line)}
 
@@ -309,9 +330,11 @@
     <div class="notebox hidden" id="dNote"></div>
 
     <div class="duecard" id="dDueCard">
-      <div class="dtop">
-        <span class="dlab">次の実施予定日</span>
-        <span class="dval" id="dDueVal"></span>
+      <div class="dstate" id="dState"></div>
+      <div class="pbar" id="dBar"><i id="dBarFill"></i></div>
+      <div class="pends">
+        <span id="dPrev"></span>
+        <span id="dNext"></span>
       </div>
       <div class="pprow">
         <span class="hint" style="margin:2px 6px 0 0">延期：</span>
@@ -328,12 +351,16 @@
       <div class="stat"><div class="sv" id="stLast"></div><div class="sk">前回</div></div>
       <div class="stat"><div class="sv" id="stAvg"></div><div class="sk">平均間隔</div></div>
     </div>
+    <div class="dots" id="dDots"></div>
 
     <button class="btn" id="dDone">✓ 完了する（今日）</button>
 
     <div class="rowlabel" style="margin-top:20px">
       <span>記録</span>
-      <button class="link" id="dAddRec" style="font-size:12px;padding:0">＋過去の記録を追加</button>
+      <span style="display:flex;gap:12px">
+        <button class="recfilter" id="recFilter" aria-pressed="false">✓ 完了のみ</button>
+        <button class="link" id="dAddRec" style="font-size:12px;padding:0">＋過去の記録</button>
+      </span>
     </div>
     <div id="dRecs"></div>
   </div>
@@ -347,15 +374,16 @@
     <button class="link" id="recSave">保存</button>
   </div>
   <div class="scroll">
-    <div class="field">
+    <div class="notebox hidden" id="recMove"></div>
+    <div class="field" id="recDateField">
       <label for="r_date">日付</label>
       <input id="r_date" type="date">
     </div>
     <div class="field">
-      <label for="r_memo">メモ（気づいたこと）</label>
+      <label for="r_memo" id="recMemoLabel">メモ（気づいたこと）</label>
       <textarea id="r_memo" placeholder="ちょっと汚れ気味だった。次は早めに"></textarea>
     </div>
-    <div class="field">
+    <div class="field" id="recPhotoField">
       <label>写真</label>
       <div class="pgrid" id="recPhotos"></div>
     </div>
@@ -434,10 +462,13 @@ async function loadAll(){
   tasks   = await dbAll('tasks');
   records = await dbAll('records');
 }
+/* 記録は「完了」と「延期」の2種類。type がないものは旧データの完了記録 */
 const recsOf = id => records.filter(r=>r.taskId === id);
+const doneOf  = id => recsOf(id).filter(r=>r.type !== 'postpone');
+const doneDatesOf = id => doneOf(id).map(r=>r.dateStr).sort();
 const lastDateOf = id => {
-  const rs = recsOf(id);
-  return rs.length ? rs.map(r=>r.dateStr).sort().pop() : null;
+  const ds = doneDatesOf(id);
+  return ds.length ? ds[ds.length - 1] : null;
 };
 
 /* ================= グループ ================= */
@@ -577,7 +608,7 @@ function taskRow(task, t){
   const lastLabel = last ? agoLabel(last, t) : 'まだ記録なし';
   txt.textContent = task.type === 'interval'
     ? `前回 ${lastLabel}・${intervalLabel(task)}`
-    : `前回 ${lastLabel}・記録${recsOf(task.id).length}回`;
+    : `前回 ${lastLabel}・記録${doneOf(task.id).length}回`;
   sub.appendChild(txt);
   main.append(nm, sub);
 
@@ -638,7 +669,7 @@ function renderHome(){
 
 /* ================= 完了 ================= */
 async function addRecord(task, dateStr){
-  const rec = {id: crypto.randomUUID(), taskId: task.id, at: Date.now(), dateStr, memo: '', photos: []};
+  const rec = {id: crypto.randomUUID(), taskId: task.id, at: Date.now(), dateStr, type: 'done', memo: '', photos: []};
   await dbPut('records', rec);
   records.push(rec);
   if(task.type === 'interval'){
@@ -775,65 +806,138 @@ function openDetail(id){
   note.textContent = task.note || '';
   note.classList.toggle('hidden', !task.note);
 
+  const dates = doneDatesOf(id);
+  const last = dates.length ? dates[dates.length - 1] : null;
+
   const card = $('dDueCard');
   if(task.type === 'interval'){
     card.classList.remove('hidden');
-    const d = dueLabel(task, t);
-    const v = $('dDueVal');
-    v.textContent = `${fmtDate(task.nextDue)}（${d.text}）`;
-    v.className = 'dval ' + d.cls;
+    renderBar(task, last, t);
+    // 「次の周期へ」。＋1日/＋3日/＋1週間と同じ意味になるときは重複するので隠す
+    const cyc = diffDays(task.nextDue, nextFrom(task.nextDue, task));
     $('ppCycle').textContent = `＋${task.every}${unitLabel(task.unit)}`;
+    $('ppCycle').classList.toggle('hidden', [1, 3, 7].includes(cyc));
   }else{
     card.classList.add('hidden');
   }
 
-  const rs = recsOf(id);
-  const last = lastDateOf(id);
-  $('stCount').innerHTML = `${rs.length}<small> 回</small>`;
+  $('stCount').innerHTML = `${dates.length}<small> 回</small>`;
   $('stLast').textContent = last ? agoLabel(last, t) : '—';
-  const avg = avgInterval(rs.map(r=>r.dateStr));
+  const avg = avgInterval(dates);
   $('stAvg').innerHTML = avg === null ? '—' : `${avg}<small> 日</small>`;
 
+  renderDots(task, dates);
   renderRecs(task);
   show('detail');
 }
+
+/* 前回から次回までの、どのあたりにいるかを棒で見せる */
+function renderBar(task, last, t){
+  const state = $('dState'), bar = $('dBar'), fill = $('dBarFill');
+  const d = dueLabel(task, t);
+  const doneToday = last === t;
+  const cls = doneToday ? 'done' : d.cls;
+  state.className = 'dstate ' + cls;
+  state.textContent = doneToday ? '✓ 今日 完了' : d.text;
+  bar.className = 'pbar ' + cls;
+
+  // 起点は前回やった日。まだ記録がなければ、予定日から1周期ぶん戻した日
+  const base = last || prevFrom(task.nextDue, task);
+  const total = Math.max(1, diffDays(base, task.nextDue));
+  const frac = doneToday || d.cls === 'over' ? 1 : Math.min(1, Math.max(0.02, diffDays(base, t) / total));
+  fill.style.width = (frac * 100).toFixed(1) + '%';
+
+  $('dPrev').innerHTML = last ? `前回 <b>${agoLabel(last, t)}</b>` : '前回 まだ記録なし';
+  $('dNext').innerHTML = `次回 <b>${fmtShort(task.nextDue)}</b>`;
+}
+/* 完了の履歴を点で並べる（緑＝周期内、赤＝遅れ）。右が最新 */
+function renderDots(task, dates){
+  const el = $('dDots');
+  el.innerHTML = '';
+  if(dates.length < 2){ el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const show = dates.slice(-14);
+  show.forEach((ds, i)=>{
+    const dot = document.createElement('i');
+    const prev = dates[dates.length - show.length + i - 1];
+    if(prev && isLate(prev, ds, task)) dot.className = 'late';
+    dot.title = fmtShort(ds);
+    el.appendChild(dot);
+  });
+  const lbl = document.createElement('span');
+  lbl.textContent = `直近${show.length}回（右が最新・赤は遅れ）`;
+  el.appendChild(lbl);
+}
+let doneOnly = false;   // 記録の「完了のみ」表示
+$('recFilter').onclick = ()=>{
+  doneOnly = !doneOnly;
+  $('recFilter').setAttribute('aria-pressed', doneOnly);
+  renderRecs(tasks.find(x=>x.id===detailId));
+};
 function renderRecs(task){
   const wrap = $('dRecs');
   wrap.innerHTML = '';
-  const rs = recsOf(task.id).sort((a,b)=> a.dateStr === b.dateStr ? b.at - a.at : (a.dateStr < b.dateStr ? 1 : -1));
+  const all = recsOf(task.id).sort((a,b)=> a.dateStr === b.dateStr ? b.at - a.at : (a.dateStr < b.dateStr ? 1 : -1));
+  const rs = doneOnly ? all.filter(r=>r.type !== 'postpone') : all;
   if(!rs.length){
     const e = document.createElement('div');
     e.className = 'empty';
     e.style.padding = '30px 20px';
-    e.textContent = 'まだ記録がありません。「✓ 完了する」を押すと1件目が記録されます。';
+    e.textContent = doneOnly
+      ? 'まだ完了の記録がありません。'
+      : 'まだ記録がありません。「✓ 完了する」を押すと1件目が記録されます。';
     wrap.appendChild(e);
     return;
   }
-  // 1つ前（古い側）の記録との間隔を出す
-  const asc = rs.slice().reverse();
-  const gap = new Map();
-  for(let i = 1; i < asc.length; i++){
-    const d = diffDays(asc[i-1].dateStr, asc[i].dateStr);
-    if(d > 0) gap.set(asc[i].id, d);
+  // 完了どうしの間隔を出す（延期の記録はまたぐ）
+  const doneAsc = all.filter(r=>r.type !== 'postpone').slice().reverse();
+  const gap = new Map(), late = new Set();
+  for(let i = 1; i < doneAsc.length; i++){
+    const prev = doneAsc[i-1].dateStr, cur = doneAsc[i].dateStr;
+    const d = diffDays(prev, cur);
+    if(d <= 0) continue;
+    gap.set(doneAsc[i].id, d);
+    if(isLate(prev, cur, task)) late.add(doneAsc[i].id);
   }
   rs.forEach(r=>{
+    const pp = r.type === 'postpone';
     const b = document.createElement('button');
-    b.className = 'rec';
+    b.className = 'rec' + (pp ? ' pp' : '');
     const dt = parseDate(r.dateStr);
     const date = document.createElement('div');
     date.className = 'rdate';
     date.innerHTML = `<div class="rm">${dt.getFullYear()}年${dt.getMonth()+1}月</div><div class="rd">${dt.getDate()}</div>`;
+
     const body = document.createElement('div');
     body.className = 'rbody';
+    const top = document.createElement('div');
+    top.className = 'rtop';
+    const kind = document.createElement('span');
+    kind.className = 'rkind' + (pp ? ' pp' : '');
+    kind.textContent = pp ? '🗓 延期' : '✓ 完了';
+    top.appendChild(kind);
     if(gap.has(r.id)){
       const g = document.createElement('span');
-      g.className = 'rgap'; g.textContent = '＋' + gap.get(r.id) + '日';
-      body.appendChild(g);
+      g.className = 'rgap' + (late.has(r.id) ? ' late' : '');
+      g.textContent = '＋' + gap.get(r.id) + '日';
+      top.appendChild(g);
     }
+    body.appendChild(top);
+
     const memo = document.createElement('div');
     if(r.memo){ memo.className = 'rmemo'; memo.textContent = r.memo; }
-    else{ memo.className = 'rmemo none'; memo.textContent = 'メモなし（タップして追記）'; }
+    else{
+      memo.className = 'rmemo none';
+      memo.textContent = pp ? '理由なし（タップして追記）' : 'メモなし（タップして追記）';
+    }
     body.appendChild(memo);
+
+    if(pp && r.from && r.to){
+      const mv = document.createElement('div');
+      mv.className = 'rmove';
+      mv.textContent = `${fmtShort(r.from)} から ${fmtShort(r.to)} に延期`;
+      body.appendChild(mv);
+    }
     if(r.photos && r.photos.length){
       const ph = document.createElement('div');
       ph.className = 'rphotos';
@@ -860,15 +964,23 @@ $('dDone').onclick = async ()=>{
 };
 $('dAddRec').onclick = ()=>{
   const task = tasks.find(x=>x.id===detailId);
-  openRec(null, {id: crypto.randomUUID(), taskId: task.id, at: Date.now(), dateStr: todayStr(), memo:'', photos:[], _new:true});
+  openRec(null, {id: crypto.randomUUID(), taskId: task.id, at: Date.now(), dateStr: todayStr(), type:'done', memo:'', photos:[], _new:true});
 };
 
-/* 延期 */
+/* 延期。日付を動かすだけでなく、理由を書ける記録として履歴に残す */
 async function postponeTo(task, dateStr){
+  const from = task.nextDue;
+  if(from === dateStr){ toast('同じ日付です'); return; }
   task.nextDue = dateStr;
   await dbPut('tasks', task);
-  toast(`次回を ${fmtShort(dateStr)} にしました`);
-  openDetail(task.id);
+  const rec = {
+    id: crypto.randomUUID(), taskId: task.id, at: Date.now(), dateStr: todayStr(),
+    type: 'postpone', from, to: dateStr, memo: '', photos: [],
+  };
+  await dbPut('records', rec);
+  records.push(rec);
+  toast(`${fmtShort(from)} から ${fmtShort(dateStr)} に延期しました`);
+  openRec(rec.id);   // 理由をその場で残せる
 }
 document.querySelectorAll('.pp[data-pp]').forEach(b=>{
   b.onclick = ()=>{
@@ -897,8 +1009,20 @@ let recDraft = null;   // 編集中の記録の作業コピー
 function openRec(id, fresh){
   const src = fresh || records.find(r=>r.id===id);
   if(!src) return;
-  recDraft = {id:src.id, taskId:src.taskId, at:src.at, dateStr:src.dateStr, memo:src.memo, photos:(src.photos||[]).slice(), _new:!!src._new};
-  $('recTitle').textContent = fresh ? '記録を追加' : '記録';
+  recDraft = {
+    id:src.id, taskId:src.taskId, at:src.at, dateStr:src.dateStr,
+    type: src.type || 'done', from: src.from, to: src.to,
+    memo:src.memo, photos:(src.photos||[]).slice(), _new:!!src._new,
+  };
+  const pp = recDraft.type === 'postpone';
+  $('recTitle').textContent = pp ? '延期の記録' : (fresh ? '記録を追加' : '記録');
+  $('recMove').classList.toggle('hidden', !pp);
+  if(pp) $('recMove').textContent = `${fmtDate(recDraft.from)} から ${fmtDate(recDraft.to)} に延期しました。`;
+  $('recDateField').classList.toggle('hidden', pp);
+  $('recPhotoField').classList.toggle('hidden', pp);
+  $('recMemoLabel').textContent = pp ? '延期の理由（次回への申し送り）' : 'メモ（気づいたこと）';
+  $('r_memo').placeholder = pp ? '雨が続いたので延期。来週やる' : 'ちょっと汚れ気味だった。次は早めに';
+  $('recDel').textContent = pp ? 'この延期の記録を消す（日付は戻りません）' : 'この記録を削除';
   $('r_date').value = recDraft.dateStr;
   $('r_memo').value = recDraft.memo || '';
   $('recDel').classList.toggle('hidden', !!fresh);
@@ -939,7 +1063,8 @@ $('photoPick').onchange = async e=>{
 };
 async function saveRec(){
   const taskId = recDraft.taskId;
-  recDraft.dateStr = $('r_date').value || recDraft.dateStr;
+  // 延期の記録は「延期した日」で固定。日付欄も出していない
+  if(recDraft.type !== 'postpone') recDraft.dateStr = $('r_date').value || recDraft.dateStr;
   recDraft.memo = $('r_memo').value.trim();
   const isNew = recDraft._new; delete recDraft._new;
   await dbPut('records', recDraft);
@@ -1011,7 +1136,7 @@ $('expBtn').onclick = async ()=>{
     for(const p of (r.photos || [])){
       photos.push({full: await blobToDataURL(p.full), thumb: await blobToDataURL(p.thumb)});
     }
-    recsOut.push({taskId:r.taskId, at:r.at, dateStr:r.dateStr, memo:r.memo, photos});
+    recsOut.push({taskId:r.taskId, at:r.at, dateStr:r.dateStr, type:r.type || 'done', from:r.from, to:r.to, memo:r.memo, photos});
   }
   const json = JSON.stringify({app:'kurikaeshi', version:2, exportedAt:Date.now(), groups:groups(), tasks, records:recsOut});
   const a = document.createElement('a');
@@ -1051,7 +1176,8 @@ $('fileImport').onchange = async e=>{
       }
       const taskId = idMap.get(o.taskId);
       if(!taskId) continue;
-      const rec = {id: crypto.randomUUID(), taskId, at: o.at || Date.now(), dateStr: o.dateStr, memo: o.memo || '', photos};
+      const rec = {id: crypto.randomUUID(), taskId, at: o.at || Date.now(), dateStr: o.dateStr,
+        type: o.type || 'done', from: o.from, to: o.to, memo: o.memo || '', photos};
       await dbPut('records', rec);
       records.push(rec);
     }

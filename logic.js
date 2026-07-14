@@ -20,6 +20,12 @@ function nextFrom(s, task){
   if(task.unit === 'week')  return addDays(s, task.every * 7);
   return addDays(s, task.every);
 }
+/* nextFrom の逆。予定日から1周期ぶん戻す（進み具合のバーの起点に使う） */
+function prevFrom(s, task){
+  if(task.unit === 'month') return addMonths(s, -task.every);
+  if(task.unit === 'week')  return addDays(s, -task.every * 7);
+  return addDays(s, -task.every);
+}
 function unitLabel(unit){
   return unit === 'month' ? 'か月' : unit === 'week' ? '週間' : '日';
 }
@@ -50,4 +56,10 @@ function avgInterval(dateStrs){
   return Math.round(sum / (s.length - 1));
 }
 
-if(typeof module !== 'undefined') module.exports = {dstr, parseDate, todayStr, addDays, addMonths, diffDays, nextFrom, unitLabel, intervalLabel, agoLabel, dueLabel, avgInterval};
+/* この完了は遅れていたか（前回から周期ぶんを過ぎていたか） */
+function isLate(prevDate, thisDate, task){
+  if(!task || task.type !== 'interval') return false;
+  return diffDays(prevDate, thisDate) > diffDays(prevDate, nextFrom(prevDate, task));
+}
+
+if(typeof module !== 'undefined') module.exports = {dstr, parseDate, todayStr, addDays, addMonths, diffDays, nextFrom, prevFrom, unitLabel, intervalLabel, agoLabel, dueLabel, avgInterval, isLate};
