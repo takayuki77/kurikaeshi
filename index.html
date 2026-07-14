@@ -263,7 +263,7 @@
         <span class="fk">繰り返しの単位</span>
         <select id="f_unit">
           <option value="day">日</option>
-          <option value="week">週</option>
+          <option value="week" selected>週</option>
           <option value="month">か月</option>
           <option value="none">決めない（随時）</option>
         </select>
@@ -271,7 +271,7 @@
       <div class="frow" id="everyRow">
         <span class="fk">繰り返しの間隔</span>
         <span class="step">
-          <input class="num" id="f_every" type="number" inputmode="numeric" min="1" max="365" value="5">
+          <input class="num" id="f_every" type="number" inputmode="numeric" min="1" max="365" value="1">
           <button class="sb" id="everyMinus" aria-label="間隔を減らす">−</button>
           <button class="sb" id="everyPlus" aria-label="間隔を増やす">＋</button>
         </span>
@@ -654,8 +654,7 @@ async function addRecord(task, dateStr){
   await dbPut('records', rec);
   records.push(rec);
   if(task.type === 'interval'){
-    // 完了した日を新しい起点にして、次回を数え直す
-    task.start = dateStr;
+    // 完了した日から数え直す
     task.nextDue = nextFrom(dateStr, task);
     await dbPut('tasks', task);
   }
@@ -684,7 +683,7 @@ function fillGroupSelect(chosen){
   });
   el.value = groups().includes(chosen) ? chosen : '';
 }
-/* 単位・間隔・開始日から「次の実施予定日」を出して見せる */
+/* 開始日がそのまま次の実施予定日。完了した日から間隔ぶん先が、その次になる */
 function syncForm(){
   const unit = $('f_unit').value;
   const isInt = unit !== 'none';
@@ -694,10 +693,12 @@ function syncForm(){
   const every = clampEvery($('f_every').value);
   $('everyMinus').disabled = every <= 1;
   const start = $('f_start').value || todayStr();
-  const next = nextFrom(start, {every, unit});
-  $('nextPreview').textContent = fmtDate(next);
+  const t = todayStr();
+  $('nextPreview').textContent = fmtDate(start);
+  const when = start === t ? '今日やること' : (diffDays(t, start) < 0 ? '今日やること（超過）' : '今後');
   $('schedHint').textContent =
-    `開始日から ${every}${unitLabel(unit)} 後の ${fmtShort(next)} が次の実施予定日になります。`;
+    `${fmtShort(start)} にやる予定として一覧の「${when}」に出ます。`
+    + `完了すると、その日から ${every}${unitLabel(unit)} 後が次の予定になります。`;
 }
 function clampEvery(v){ return Math.max(1, Math.min(365, Number(v) || 1)); }
 $('f_unit').onchange = syncForm;
@@ -712,9 +713,9 @@ function openForm(id){
   $('formTitle').textContent = task ? 'タスクを編集' : '新規タスク';
   $('f_name').value  = task ? task.name : '';
   fillGroupSelect(task ? task.group : '');
-  $('f_unit').value  = task ? (task.type === 'interval' ? task.unit : 'none') : 'day';
-  $('f_every').value = task && task.every ? task.every : 5;
-  $('f_start').value = task && task.start ? task.start : todayStr();
+  $('f_unit').value  = task ? (task.type === 'interval' ? task.unit : 'none') : 'week';
+  $('f_every').value = task && task.every ? task.every : 1;
+  $('f_start').value = task && task.nextDue ? task.nextDue : todayStr();
   $('f_note').value  = task ? (task.note || '') : '';
   $('formDel').classList.toggle('hidden', !task);
   syncForm();
@@ -733,11 +734,11 @@ async function saveForm(){
 
   if(unit === 'none'){
     task.type = 'anytime';
-    delete task.every; delete task.unit; delete task.start; delete task.nextDue;
+    delete task.every; delete task.unit; delete task.nextDue;
   }else{
+    // 開始日 ＝ 次の実施予定日。完了して初めて、そこから間隔ぶん先へ進む
     const every = clampEvery($('f_every').value);
-    const start = $('f_start').value || todayStr();
-    Object.assign(task, {type:'interval', every, unit, start, nextDue: nextFrom(start, {every, unit})});
+    Object.assign(task, {type:'interval', every, unit, nextDue: $('f_start').value || todayStr()});
   }
   await dbPut('tasks', task);
   if(!editingTask) tasks.push(task);
@@ -879,10 +880,9 @@ $('dAddRec').onclick = ()=>{
   openRec(null, {id: crypto.randomUUID(), taskId: task.id, at: Date.now(), dateStr: todayStr(), memo:'', photos:[], _new:true});
 };
 
-/* 延期。予定日を動かしたぶん起点もずらし、「起点＋間隔＝予定日」を保つ */
+/* 延期 */
 async function postponeTo(task, dateStr){
   task.nextDue = dateStr;
-  task.start = prevFrom(dateStr, task);
   await dbPut('tasks', task);
   toast(`次回を ${fmtShort(dateStr)} にしました`);
   openDetail(task.id);
@@ -1081,14 +1081,11 @@ $('fileImport').onchange = async e=>{
 };
 
 /* ================= 起動 ================= */
-/* 旧版のデータを今の形にそろえる（1日の実施回数は廃止、開始日を補う） */
+/* 旧版のデータを今の形にそろえる（1日の実施回数と開始日の保持は廃止） */
 function migrate(task){
   let dirty = false;
   if('times' in task){ delete task.times; dirty = true; }
-  if(task.type === 'interval' && !task.start && task.nextDue){
-    task.start = prevFrom(task.nextDue, task);
-    dirty = true;
-  }
+  if('start' in task){ delete task.start; dirty = true; }
   if(!('group' in task)){ task.group = ''; dirty = true; }
   return dirty;
 }
