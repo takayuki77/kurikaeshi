@@ -969,7 +969,7 @@ $('dDone').onclick = async ()=>{
   const task = tasks.find(x=>x.id===detailId);
   const rec = await addRecord(task, todayStr());
   toast('完了を記録しました。メモや写真も残せます');
-  openRec(rec.id);
+  openRec(rec.id, null, 'home');   // 保存したら一覧へ戻る
 };
 $('dAddRec').onclick = ()=>{
   const task = tasks.find(x=>x.id===detailId);
@@ -1015,9 +1015,11 @@ $('ppDate').onclick = ()=>{
 
 /* ================= 記録の編集 ================= */
 let recDraft = null;   // 編集中の記録の作業コピー
-function openRec(id, fresh){
+let recBackTo = 'detail';   // 保存したあとに戻る先。完了したときは一覧へ
+function openRec(id, fresh, backTo){
   const src = fresh || records.find(r=>r.id===id);
   if(!src) return;
+  recBackTo = backTo || 'detail';
   recDraft = {
     id:src.id, taskId:src.taskId, at:src.at, dateStr:src.dateStr,
     type: src.type || 'done', from: src.from, to: src.to,
@@ -1094,7 +1096,9 @@ async function saveRec(){
   else records[records.findIndex(r=>r.id===recDraft.id)] = recDraft;
   const moved = await reschedule(task, before);
   toast(moved ? `保存しました（次回 ${fmtShort(moved)}）` : '保存しました');
-  openDetail(taskId);
+  // 完了して記録したときは一覧へ戻る。メモの手直しや延期のときは詳細のまま
+  if(recBackTo === 'home'){ renderHome(); show('home'); }
+  else openDetail(taskId);
 }
 $('recSave').onclick  = saveRec;
 $('recSave2').onclick = saveRec;
