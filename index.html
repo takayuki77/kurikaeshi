@@ -401,7 +401,11 @@
 
     <div class="sec">通知</div>
     <button class="lrow" id="notifRow">
-      <span><span>プッシュ通知</span><div class="sub" id="notifSub">準備中：次の段階でつなぎます</div></span>
+      <span><span id="notifTitle">プッシュ通知</span><div class="sub" id="notifSub">確認中…</div></span>
+      <span class="arrow" id="notifArrow">›</span>
+    </button>
+    <button class="lrow hidden" id="notifTest">
+      <span><span>テスト通知を送る</span><div class="sub">いますぐ1通届くか確かめます</div></span>
       <span class="arrow">›</span>
     </button>
 
@@ -450,8 +454,18 @@ function openDB(){
 async function conn(){ if(!_db) _db = await openDB(); return _db; }
 function req(r){ return new Promise((res, rej)=>{ r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
 async function dbAll(store){ const d = await conn(); return req(d.transaction(store).objectStore(store).getAll()); }
-async function dbPut(store, val){ const d = await conn(); return req(d.transaction(store,'readwrite').objectStore(store).put(val)); }
-async function dbDel(store, key){ const d = await conn(); return req(d.transaction(store,'readwrite').objectStore(store).delete(key)); }
+async function dbPut(store, val){
+  const d = await conn();
+  const r = await req(d.transaction(store,'readwrite').objectStore(store).put(val));
+  if(store === 'tasks') queuePushSync();   // 予定が変わったら通知係にも伝える
+  return r;
+}
+async function dbDel(store, key){
+  const d = await conn();
+  const r = await req(d.transaction(store,'readwrite').objectStore(store).delete(key));
+  if(store === 'tasks') queuePushSync();
+  return r;
+}
 
 let tasks = [], records = [];
 async function loadAll(){
@@ -1107,9 +1121,9 @@ $('lbClose').onclick = ()=>$('lightbox').classList.remove('on');
 /* ================= 設定 ================= */
 $('toSettings').onclick = ()=>{ renderSettings(); show('settings'); };
 $('setBack').onclick = ()=>{ renderHome(); show('home'); };
-$('notifRow').onclick = ()=>toast('通知はこれから設定します（第2段階）');
 
 async function renderSettings(){
+  renderNotif();
   $('groupSub').textContent = groups().join(' / ');
   let size = '';
   try{
@@ -1133,6 +1147,108 @@ $('groupEdit').onclick = ()=>{
   });
   renderSettings(); renderHome();
   toast('変更しました');
+};
+
+/* ================= プッシュ通知 =================
+   毎朝7時に「今日やること」を知らせる。Cloudflare の通知係へ
+   「購読情報」と「タスク名・予定日」だけを預ける（メモ・写真は端末から出ない）。 */
+const PUSH_API = 'https://kurikaeshi-push.takayuki77.workers.dev';
+const VAPID_PUBLIC = 'BLAtoF0CC4q9AgaQRyBbuDAZuGzY_qU7AiJ7t-VT66-8MZM5IaPF4OliRLuFL9v6R8yPmZnTooTj7vbfEcteLlc';
+
+function b64ToBytes(s){
+  const b64 = (s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+const pushOn = ()=> !!ls.get('kk.push', null);
+const standalone = ()=> window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushable  = ()=> 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
+
+function pushTasks(){
+  return tasks.filter(t => t.type === 'interval' && t.nextDue).map(t => ({name: t.name, due: t.nextDue}));
+}
+async function currentSub(){
+  const reg = await navigator.serviceWorker.ready;
+  return reg.pushManager.getSubscription();
+}
+/* タスクを変えたら、預けてある予定日も更新する（まとめて1回だけ送る） */
+let syncTimer = null;
+function queuePushSync(){
+  if(!pushOn()) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=>{ syncPush().catch(()=>{}); }, 1200);
+}
+async function syncPush(){
+  const sub = await currentSub();
+  if(!sub){ ls.set('kk.push', null); renderNotif(); return false; }
+  const res = await fetch(PUSH_API + '/sync', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({sub: sub.toJSON(), tasks: pushTasks()}),
+  });
+  return res.ok;
+}
+async function enablePush(){
+  if(!pushable()){ alert('この端末では通知を使えません。'); return; }
+  if(!standalone()){
+    alert('通知はホーム画面に追加したアプリからのみ使えます。\n\nSafariの共有ボタン →「ホーム画面に追加」をしてから、そのアイコンで開いてもう一度お試しください。');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if(perm !== 'granted'){
+    alert('通知が許可されませんでした。\n\niPhoneの「設定 →通知 → くりかえし帳」から許可できます。');
+    return;
+  }
+  toast('通知を登録しています…');
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if(!sub){
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: b64ToBytes(VAPID_PUBLIC),
+    });
+  }
+  ls.set('kk.push', sub.endpoint);
+  const ok = await syncPush();
+  renderNotif();
+  toast(ok ? '通知をオンにしました（毎朝7時）' : '登録に失敗しました。通信状況を確認してください');
+  if(!ok) ls.set('kk.push', null);
+  renderNotif();
+}
+async function disablePush(){
+  const sub = await currentSub();
+  if(sub){
+    await fetch(PUSH_API + '/unsubscribe', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({endpoint: sub.endpoint}),
+    }).catch(()=>{});
+    await sub.unsubscribe().catch(()=>{});
+  }
+  ls.set('kk.push', null);
+  renderNotif();
+  toast('通知をオフにしました');
+}
+function renderNotif(){
+  const on = pushOn();
+  $('notifTitle').textContent = on ? 'プッシュ通知：オン' : 'プッシュ通知：オフ';
+  $('notifTest').classList.toggle('hidden', !on);
+  const sub = $('notifSub');
+  if(!pushable())        sub.textContent = 'この端末では使えません';
+  else if(!standalone()) sub.textContent = 'ホーム画面に追加したアイコンから開くと使えます';
+  else if(on)            sub.textContent = '毎朝7時に「今日やること」をお知らせします。タップでオフ';
+  else                   sub.textContent = 'タップすると毎朝7時にお知らせします';
+}
+$('notifRow').onclick = ()=>{ (pushOn() ? disablePush() : enablePush()).catch(e => alert('うまくいきませんでした：' + e.message)); };
+$('notifTest').onclick = async ()=>{
+  const sub = await currentSub();
+  if(!sub){ toast('登録が見つかりません'); return; }
+  toast('テスト通知を送っています…');
+  const res = await fetch(PUSH_API + '/test', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({endpoint: sub.endpoint}),
+  }).catch(()=>null);
+  toast(res && res.ok ? '送りました。数秒で届きます' : '送信に失敗しました');
 };
 
 /* バックアップ */

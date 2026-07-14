@@ -1,0 +1,4 @@
+node_modules/
+.wrangler/
+# ローカル実行用の秘密鍵。絶対にコミットしない
+.dev.vars
