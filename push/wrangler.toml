@@ -1,15 +1,15 @@
 name = "kurikaeshi-push"
 main = "src/index.js"
-compatibility_date = "2026-07-01"
+compatibility_date = "2025-07-01"
 
 # 購読情報とタスクの予定日の置き場（id は `wrangler kv namespace create SUBS` で作って書き換える）
 [[kv_namespaces]]
 binding = "SUBS"
-id = "PLACEHOLDER"
+id = "ac5ac98677634a5d9c8650046bc8d092"
 
-# 毎朝7時（日本時間）＝ 22:00 UTC
+# 毎朝8時（日本時間）＝ 23:00 UTC
 [triggers]
-crons = ["0 22 * * *"]
+crons = ["0 23 * * *"]
 
 [vars]
 VAPID_PUBLIC = "BLAtoF0CC4q9AgaQRyBbuDAZuGzY_qU7AiJ7t-VT66-8MZM5IaPF4OliRLuFL9v6R8yPmZnTooTj7vbfEcteLlc"

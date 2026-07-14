@@ -1150,7 +1150,7 @@ $('groupEdit').onclick = ()=>{
 };
 
 /* ================= プッシュ通知 =================
-   毎朝7時に「今日やること」を知らせる。Cloudflare の通知係へ
+   毎朝8時に「今日やること」を知らせる。Cloudflare の通知係へ
    「購読情報」と「タスク名・予定日」だけを預ける（メモ・写真は端末から出ない）。 */
 const PUSH_API = 'https://kurikaeshi-push.takayuki77.workers.dev';
 const VAPID_PUBLIC = 'BLAtoF0CC4q9AgaQRyBbuDAZuGzY_qU7AiJ7t-VT66-8MZM5IaPF4OliRLuFL9v6R8yPmZnTooTj7vbfEcteLlc';
@@ -1212,7 +1212,7 @@ async function enablePush(){
   ls.set('kk.push', sub.endpoint);
   const ok = await syncPush();
   renderNotif();
-  toast(ok ? '通知をオンにしました（毎朝7時）' : '登録に失敗しました。通信状況を確認してください');
+  toast(ok ? '通知をオンにしました（毎朝8時）' : '登録に失敗しました。通信状況を確認してください');
   if(!ok) ls.set('kk.push', null);
   renderNotif();
 }
@@ -1236,8 +1236,8 @@ function renderNotif(){
   const sub = $('notifSub');
   if(!pushable())        sub.textContent = 'この端末では使えません';
   else if(!standalone()) sub.textContent = 'ホーム画面に追加したアイコンから開くと使えます';
-  else if(on)            sub.textContent = '毎朝7時に「今日やること」をお知らせします。タップでオフ';
-  else                   sub.textContent = 'タップすると毎朝7時にお知らせします';
+  else if(on)            sub.textContent = '毎朝8時に「今日やること」をお知らせします。タップでオフ';
+  else                   sub.textContent = 'タップすると毎朝8時にお知らせします';
 }
 $('notifRow').onclick = ()=>{ (pushOn() ? disablePush() : enablePush()).catch(e => alert('うまくいきませんでした：' + e.message)); };
 $('notifTest').onclick = async ()=>{

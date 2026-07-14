@@ -1,6 +1,6 @@
 /* くりかえし帳 通知係（Cloudflare Worker）
    - アプリから「購読情報＋タスクの予定日」を預かる
-   - 毎朝7時（日本時間）に、その日やることがある人へプッシュ通知を送る
+   - 毎朝8時（日本時間）に、その日やることがある人へプッシュ通知を送る
    预かるのは タスク名 と 予定日 だけ。メモや写真は端末から出ない。 */
 import { sendPush } from './webpush.js';
 
@@ -113,7 +113,7 @@ export default {
     return json({error: 'not found'}, 404, origin);
   },
 
-  /* 毎朝7時（日本時間）に動く */
+  /* 毎朝8時（日本時間）に動く */
   async scheduled(event, env, ctx){
     ctx.waitUntil((async () => {
       const today = todayJst();
